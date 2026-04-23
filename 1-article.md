@@ -21,7 +21,7 @@ SELECT * FROM user_notifications
 WHERE DATE(created_at) = '2026-04-23'
 ```
 
-See `DATE(created_at)`? MySQL has to compute that function for every row before comparing. Your `created_at` index is useless — `EXPLAIN` shows a full table scan:
+See `DATE(created_at)`? MySQL has to compute that function for every row before comparing. Your `created_at` index is useless, `EXPLAIN` shows a full table scan:
 
 ```plaintext
 +----+-------------+--------------------+------+---------+
@@ -67,21 +67,21 @@ The column is untouched. MySQL can do a clean range scan on the `created_at` ind
 +----+-------------+--------------------+-------+------+
 ```
 
-Half-open range (`>=` start, `<` next day) is the safer form — `endOfDay()` ends at `23:59:59.999999`, and comparing against `23:59:59` can quietly miss the last second.
+Half-open range (`>=` start, `<` next day) is the safer form - `endOfDay()` ends at `23:59:59.999999`, and comparing against `23:59:59` can quietly miss the last second.
 
 ## Why It Works
 
-This is called **sargability** — "Search ARGument ABLE". A predicate is sargable when the column appears as-is, without a function wrapping it. The moment you write `DATE(col)`, `YEAR(col)`, or `LOWER(col)`, the optimizer can't use a standard B-tree index on `col` anymore.
+This is called **sargability** - "Search ARGument ABLE". A predicate is sargable when the column appears as-is, without a function wrapping it. The moment you write `DATE(col)`, `YEAR(col)`, or `LOWER(col)`, the optimizer can't use a standard B-tree index on `col` anymore.
 
-The same trap applies to `whereDay()`, `whereMonth()`, `whereYear()`, and `whereTime()` — all of them wrap the column in a MySQL function. Fine on small lookup tables. Painful on any growing log-style table.
+The same trap applies to `whereDay()`, `whereMonth()`, `whereYear()`, and `whereTime()` all of them wrap the column in a MySQL function. Fine on small lookup tables. Painful on any growing log-style table.
 
-Heads up: PostgreSQL lets you build a functional index (`CREATE INDEX ON t ((date(created_at)))`), so there `whereDate()` can still hit an index. MySQL has no real equivalent for this case — generated columns with an index work, but they're extra schema baggage for something a range filter already solves.
+Heads up: PostgreSQL lets you build a functional index (`CREATE INDEX ON t ((date(created_at)))`), so there `whereDate()` can still hit an index. MySQL has no real equivalent for this case, generated columns with an index work, but they're extra schema baggage for something a range filter already solves.
 
 Tutorials love `whereDate('created_at', today())`. I still prefer the range form. It reads the same everywhere, and I never have to wonder whether an index will be used.
 
 ## TL;DR
 
-`whereDate()` is convenient but non-sargable — on large tables it forces a full scan. Compare `created_at` against a half-open `>= startOfDay()` / `< startOfDay() + 1 day` range and keep the index in play.
+`whereDate()` is convenient but non-sargable on large tables it forces a full scan. Compare `created_at` against a half-open `>= startOfDay()` / `< startOfDay() + 1 day` range and keep the index in play.
 
 💡 Same story for `whereMonth()`, `whereYear()`, `whereDay()`, `whereTime()`. If the column is wrapped in a function, assume the index is gone.
 
