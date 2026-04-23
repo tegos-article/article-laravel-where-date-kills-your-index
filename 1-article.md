@@ -1,7 +1,3 @@
-# Laravel whereDate() Silently Kills Your Index
-
-![Laravel whereDate() Silently Kills Your Index](assets/poster.jpg)
-
 `whereDate('created_at', $date)` looks clean, but on a big table it quietly drops your index and does a full scan.
 
 ## The Problem
