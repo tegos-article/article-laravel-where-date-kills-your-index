@@ -17,4 +17,4 @@ If a column is wrapped in a function inside `WHERE`, assume the index is gone.
 
 ## 📎 Read the Full Article
 
-[Laravel whereDate() Silently Kills Your Index](https://dev.to/tegos/PLACEHOLDER)
+[Laravel whereDate() Silently Kills Your Index](https://dev.to/tegos/laravel-wheredate-silently-kills-your-index-2lnf)
